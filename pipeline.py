@@ -4,6 +4,32 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+
+def region_of_interest(img, vertices):
+    """
+    Applies an image mask.
+    
+    Only keeps the region of the image defined by the polygon
+    formed from `vertices`. The rest of the image is set to black.
+    `vertices` should be a numpy array of integer points.
+    """
+    #defining a blank mask to start with
+    mask = np.zeros_like(img)   
+    
+    #defining a 3 channel or 1 channel color to fill the mask with depending on the input image
+    if len(img.shape) > 2:
+        channel_count = img.shape[2]  # i.e. 3 or 4 depending on your image
+        ignore_mask_color = (255,) * channel_count
+    else:
+        ignore_mask_color = 255
+        
+    #filling pixels inside the polygon defined by "vertices" with the fill color    
+    cv2.fillPoly(mask, vertices, ignore_mask_color)
+    
+    #returning the image only where mask pixels are nonzero
+    masked_image = cv2.bitwise_and(img, mask)
+    return masked_image
+
 def sobel_absolute_scaled(gray):
     # allow images with color depth = one 
     if len(gray.shape) != 2:
@@ -145,6 +171,9 @@ class lane_detector:
         self.b_thresh=(190,220)
         self.font = cv2.FONT_HERSHEY_PLAIN
         self.color = (255,255,255)
+        self.offset = 80
+        self.left = 0
+        self.right = 9999
         self.out = 'output_images'
         self.base = 'frame'
         self.ext = '.jpg'
@@ -196,7 +225,7 @@ class lane_detector:
         b_binary = channel_threshold(b_channel, self.b_thresh)
     
         # RGB or BGR
-        return np.dstack((b_binary, g_binary, r_binary))*255
+        return np.dstack((b_binary, g_binary, r_binary))
     
     
     def process(self, image):
@@ -204,23 +233,33 @@ class lane_detector:
         # undistorte the image
         undist = self.undistort(image)
 
+        # get width and height,
+        w,h = image.shape[1::-1]
+
+        # apply regional masking 
+        region = np.array([[ (0,h), (w,h), (w,h//2+self.offset), (0,h//2+self.offset) ]], dtype=np.int32)
+
+        masked = region_of_interest(undist, region)
+
+
         # apply gradients and threshold
-        color = self.gradients(undist)
-        
+        #color = self.gradients(undist)
+        color = self.gradients(masked)
+
         if self.debug_binary:
-            tls.save_image_as(color, '{}_binary{}'.format(self.base, self.ext), tls.path_join(self.out, 'binary'))
+            tls.save_image_as(color*255, '{}_binary{}'.format(self.base, self.ext), tls.path_join(self.out, 'binary'))
         
         #return
         
         # combine all channels and take threshold
         binary = color[:,:,0] + color[:,:,1] + color[:,:,2]
-        binary = channel_threshold(binary,(1,255))
+        #binary = channel_threshold(binary,(1,255))
        
         # get width and height,
         w,h = image.shape[1::-1]
         
         # calculate src and dst points
-        src = np.float32([[50,h],[w-50,h],[710,h//2+90],[570,h//2+90]])
+        src = np.float32([[50,h],[w-50,h],[710,h//2+self.offset],[570,h//2+self.offset]])
         dst = np.float32([[200,h],[w-200,h],[w-50,0],[50,0]])
         
         if self.debug_lines:            
@@ -235,7 +274,11 @@ class lane_detector:
             cv2.line(lines, tuple(dst[3]), tuple(dst[0]), (0,255,0), 5)
             tls.save_image_as(lines, '{}_lines{}'.format(self.base,self.ext), tls.path_join(self.out, 'lines'))
         
-        
+        colorWarped = self.warp(color, src, dst)
+
+        if self.debug_warped:
+            tls.save_image_as(colorWarped*255, '{}_warped{}'.format(self.base,self.ext), tls.path_join(self.out, 'color'))
+
         # warp the binary image
         warped = self.warp(binary, src, dst)
         
@@ -251,15 +294,27 @@ class lane_detector:
         # Find the peak of the left and right halves of the histogram 
         left_peak = np.argmax(histogram[:midpoint])
         right_peak = np.argmax(histogram[midpoint:]) + midpoint
+
+        if left_peak == 0:
+            left_peak = self.left
+        else:
+            self.left = left_peak
+        
+        if right_peak == w:
+            right_peak = self.right
+        else:
+            self.right = right_peak
         
         if self.debug_histogram:            
             # Plot the result
             fig = plt.figure()
             
             ax1 = fig.add_subplot(1,1,1)
-            ax1.plot(range(1280), histogram, 'red', linewidth=3)
+            ax1.plot(range(1280), (warped.shape[0]//2) - histogram, 'red', linewidth=3)
             ax1.imshow((warped[warped.shape[0]//2:,:]))
-            fig.savefig('{}/{}.png'.format(self.out,self.base))
+            path = '{}/histogram/'.format(self.out)
+            tls.ensure_path_exists(path)
+            fig.savefig('{}{}.png'.format(path,self.base))
             plt.close(fig)
         
         # find lane pixels
