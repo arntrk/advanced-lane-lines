@@ -48,4 +48,3 @@ def channels(img):
     g = img[:,:,1]
     b = img[:,:,2]
     return r,g,b
-
