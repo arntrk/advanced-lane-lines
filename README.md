@@ -139,5 +139,9 @@ The above example shows how to produce a video by combing two sets of images, so
 
 After these one can combine images with `image2video` as shown in example above.
 
+The [P2 notebook](P2.ipynb) is using this pipeline to process video directly using `Moviepy`.
 
+TODO:
+* make the `pipeline.py` script process video directly from command-line
+* process video stream provided by GStreamer as `udpsrc`, `filesink`, or `device`.
 
