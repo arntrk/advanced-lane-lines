@@ -20,7 +20,7 @@
 
 In this project, your goal is to write a software pipeline to identify the lane boundaries in a video, but the main output or product we want you to create is a detailed writeup of the project.    
 
-[detailed writeup]{writeup.ipynb}
+[detailed writeup](writeup.ipynb)
 
 
 ## Running the project:
