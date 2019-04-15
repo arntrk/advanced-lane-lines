@@ -182,17 +182,6 @@ The detection of lane lines starts with creating a histogram of all non zero pix
 ### 6. Determine the curvature of the lane and vehicle position with respect to center.
 ---
 
-[formula1]: ./docs/rcurve.png 
-[formula2]: ./docs/linfunc.png 
-[formula3]: ./docs/linfunc.png 
-[formula4]: ./docs/linfunc.png 
-
-The special case of [radius of curvature](https://www.intmath.com/applications-differentiation/8-radius-curvature.php), where `R -> R` is found with 
-
-
-
-
-
 
 
 
