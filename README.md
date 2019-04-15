@@ -20,6 +20,9 @@
 
 In this project, your goal is to write a software pipeline to identify the lane boundaries in a video, but the main output or product we want you to create is a detailed writeup of the project.    
 
+[detailed writeup]{writeup.ipynb}
+
+
 ## Running the project:
 ---
 
@@ -132,7 +135,7 @@ The first tries to minimize the output to get away noise from road edge, signes,
 My choose were the latter, for implementation details see pipeline.py.
 
 
-### 4. Apply a perspective transform to rectify binary image ("birds-eye view").
+### 4. Apply a perspective transform 
 ---
 
 The perspective transformation is performed in two stages with opencv:
@@ -178,9 +181,17 @@ The detection of lane lines starts with creating a histogram of all non zero pix
 
 ### 6. Determine the curvature of the lane and vehicle position with respect to center.
 ---
-The curvature is found by
 
-`$$ f(x)=2 $$`
+[formula1]: ./docs/rcurve.png 
+[formula2]: ./docs/linfunc.png 
+[formula3]: ./docs/linfunc.png 
+[formula4]: ./docs/linfunc.png 
+
+The special case of [radius of curvature](https://www.intmath.com/applications-differentiation/8-radius-curvature.php), where `R -> R` is found with 
+
+
+
+
 
 
 
