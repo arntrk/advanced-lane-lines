@@ -128,8 +128,8 @@ def find_lane_pixels(binary_warped, leftx_base, rightx_base):
         win_xright_high = rightx_current + margin 
         
         # Draw the windows on the visualization image
-        #cv2.rectangle(out_img, (win_xleft_low,  win_y_low), (win_xleft_high,  win_y_high), (0,255,0), 2) 
-        #cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0,255,0), 2) 
+        cv2.rectangle(out_img, (win_xleft_low,  win_y_low), (win_xleft_high,  win_y_high), (0,255,0), 2) 
+        cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0,255,0), 2) 
         
         # Identify the nonzero pixels in x and y within the window #        
         good_left_inds  = ((nonzeroy >= win_y_low)     & (nonzeroy < win_y_high) & 
@@ -181,6 +181,7 @@ class lane_detector:
         self.debug_lines = False
         self.debug_histogram = False
         self.debug_warped = False
+        self.debug_detect = False
 
     
     def threshold_blue(self, thresh):
@@ -239,17 +240,18 @@ class lane_detector:
         # apply regional masking 
         region = np.array([[ (0,h), (w,h), (w,h//2+self.offset), (0,h//2+self.offset) ]], dtype=np.int32)
 
-        masked = region_of_interest(undist, region)
-
+        # only keep pixel inside region of interest
+        #masked = region_of_interest(undist, region)
 
         # apply gradients and threshold
-        #color = self.gradients(undist)
-        color = self.gradients(masked)
+        color = self.gradients(undist)
+        #color = self.gradients(masked)
+
+        # only keep pixel inside region of interest
+        color = region_of_interest(color, region)
 
         if self.debug_binary:
             tls.save_image_as(color*255, '{}_binary{}'.format(self.base, self.ext), tls.path_join(self.out, 'binary'))
-        
-        #return
         
         # combine all channels and take threshold
         binary = color[:,:,0] + color[:,:,1] + color[:,:,2]
@@ -320,6 +322,11 @@ class lane_detector:
         # find lane pixels
         leftx, lefty, rightx, righty, out_img = find_lane_pixels(warped, left_peak, right_peak)
 
+        if self.debug_detect:
+             out_img[lefty, leftx] = [255, 0, 0]
+             out_img[righty, rightx] = [0, 0, 255]
+             tls.save_image_as(out_img, '{}_output{}'.format(self.base,self.ext), tls.path_join(self.out, 'output'))
+
         # Fit a second order polynomial to each 
         if len(leftx) != 0:
             left_fit =  np.polyfit(lefty,  leftx, 2) 
@@ -335,12 +342,15 @@ class lane_detector:
         if len(rightx) != 0:
             right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
     
+        # image to draw results on
+        output = np.zeros_like(out_img)
+
         if len(leftx) != 0 and len(rightx) != 0:
             # draw green lines between the two curves
             for i in range(left_fitx.shape[0]):
                 x1 = left_fitx[i].astype(np.int)
                 x2 = right_fitx[i].astype(np.int)
-                cv2.line(out_img, (x1,i),(x2,i), (0,255,0), 5)
+                cv2.line(output, (x1,i),(x2,i), (0,255,0), 5)
         
         # ....
         y_eval = np.max(ploty)
@@ -359,7 +369,7 @@ class lane_detector:
             right_curverad = ((1 + (2*right_fit[0]*y_eval*ym_per_pix + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
         
         # get the inverse matrix and inverse transform
-        unwarped = self.warp(out_img, dst,src)
+        unwarped = self.warp(output, dst,src)
     
         # mix undist image and the unwarped 'detection' image
         result = cv2.addWeighted(undist, 0.9, unwarped, 0.2, 0)
