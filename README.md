@@ -180,7 +180,9 @@ The detection of lane lines starts with creating a histogram of all non zero pix
 ---
 The curvature is found by
 
-`$$ f(x)=2 $$`
+$$ 
+f(x)=2 
+$$
 
 
 
