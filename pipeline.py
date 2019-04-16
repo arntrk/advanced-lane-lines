@@ -192,13 +192,22 @@ class lane_detector:
     
     def warp(self, binary, src, dst):
         # only width and height, discard depth if provided
-        w,h = binary.shape[1::-1]
+        #w,h = binary.shape[1::-1]
         
         # get M, the transform matrix
         M = cv2.getPerspectiveTransform(src, dst)
         
+        w,h = np.amax(dst,axis=0)
+
         # returned the warped image
         return cv2.warpPerspective(binary, M, (w,h), flags=cv2.INTER_LINEAR)
+    
+    def unwarp(self, binary, src, dst, w, h):        
+        # get Minv, the transform matrix
+        Minv = cv2.getPerspectiveTransform(dst, src)
+
+        # returned the warped image
+        return cv2.warpPerspective(binary, Minv, (w,h), flags=cv2.INTER_LINEAR)
 
     def gaussian_blur(self, img, kernel_size):
         return cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
@@ -248,7 +257,7 @@ class lane_detector:
         #color = self.gradients(masked)
 
         # only keep pixel inside region of interest
-        color = region_of_interest(color, region)
+        #color = region_of_interest(color, region)
 
         if self.debug_binary:
             tls.save_image_as(color*255, '{}_binary{}'.format(self.base, self.ext), tls.path_join(self.out, 'binary'))
@@ -261,8 +270,30 @@ class lane_detector:
         w,h = image.shape[1::-1]
         
         # calculate src and dst points
-        src = np.float32([[50,h],[w-50,h],[710,h//2+self.offset],[570,h//2+self.offset]])
-        dst = np.float32([[200,h],[w-200,h],[w-50,0],[50,0]])
+        #src = np.float32([[50,h],[w-50,h],[710,h//2+self.offset],[570,h//2+self.offset]])
+        #dst = np.float32([[200,h],[w-200,h],[w-50,0],[50,0]])
+
+        src = np.array([[570,h//2+self.offset],         # top left point
+                        [710,h//2+self.offset],         # top right point
+                        [w-50,h],                       # bottom right point
+                        [50,h]], dtype = np.float32)    # bottom left point
+                          
+    
+        (tl,tr,br,bl) = src
+
+        widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+        widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+        maxWidth = max(int(widthA), int(widthB))
+ 
+        heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+        heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+        maxHeight = max(int(heightA), int(heightB))
+
+        # calculate the destination points
+        dst = np.array([[0,0], [maxWidth-1, 0],
+                        [maxWidth-1, maxHeight-1],
+                        [0, maxHeight-1]], dtype = np.float32)
+
         
         if self.debug_lines:            
             lines = np.copy(undist)
@@ -312,7 +343,7 @@ class lane_detector:
             fig = plt.figure()
             
             ax1 = fig.add_subplot(1,1,1)
-            ax1.plot(range(1280), (warped.shape[0]//2) - histogram, 'red', linewidth=3)
+            ax1.plot(range(warped.shape[1]), (warped.shape[0]//2) - histogram, 'red', linewidth=3)
             ax1.imshow((warped[warped.shape[0]//2:,:]))
             path = '{}/histogram/'.format(self.out)
             tls.ensure_path_exists(path)
@@ -369,7 +400,7 @@ class lane_detector:
             right_curverad = ((1 + (2*right_fit[0]*y_eval*ym_per_pix + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
         
         # get the inverse matrix and inverse transform
-        unwarped = self.warp(output, dst,src)
+        unwarped = self.unwarp(output, src, dst, w, h)
     
         # mix undist image and the unwarped 'detection' image
         result = cv2.addWeighted(undist, 0.9, unwarped, 0.2, 0)
