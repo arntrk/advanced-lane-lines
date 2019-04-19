@@ -43,6 +43,19 @@ def rgb2gray(img):
 def bgr2hls(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 
+def bgr2lab(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+def rgb2lab(img):
+    return cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+
+def bgr2luv(img):
+    return cv2.cvtColor(img, cv2.COLOR_BGR2LUV)
+
+def rgb2luv(img):
+    return cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
+
+
 def channels(img):
     r = img[:,:,0]
     g = img[:,:,1]

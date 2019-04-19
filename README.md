@@ -141,7 +141,25 @@ After these one can combine images with `image2video` as shown in example above.
 
 The [P2 notebook](P2.ipynb) is using this pipeline to process video directly using `Moviepy`.
 
-TODO:
+## Issues and Improvements
+
+### Noise due to distance from the car
+
+As the viewing distance increases so will noise relative to the selected threshold values. The resone for this is that the color gets more blury and the lighting condition changes, with respect to distance from camera. One might look at a way to have adaptive threshold values, based on average light condition in the neighborhood of the a pixel.
+
+### Dark and Bright areas
+
+The is issues with both dark areas as under a brigde and bright areas where the sun is shinning on the road or even giving sun flair on the windshield. There will ofcourse also be issues with regards to night driving, were there is very litle color in the image and also bright light from other cars. 
+
+### Curve Fitting
+
+There are times when the lane finding algortihm do not find any points to use for curve fitting, then the np.polyfit will throw error. This might be related to how many parts the domain is splitted up in and there is enough found points to find next placement of search rectangle. 
+
+
+### TODO:
+* Improve by using previous found lane line to get the lane line
+* Investiagte adaptive change of threshold values based on L channel in LUV 
 * make the `pipeline.py` script process video directly from command-line
 * process video stream provided by GStreamer as `udpsrc`, `filesink`, or `device`.
-
+* Implement this on an Jetson Xavier 
+ 
