@@ -157,7 +157,8 @@ There are times when the lane finding algortihm do not find any points to use fo
 
 
 ### TODO:
-* Improve by using previous found lane line to get the lane line
+* use cv2.matchShapes to improve quality of final warp ployon
+* smoothing out te lane detection using series of multiple frames
 * Investiagte adaptive change of threshold values based on L channel in LUV 
 * make the `pipeline.py` script process video directly from command-line
 * process video stream provided by GStreamer as `udpsrc`, `filesink`, or `device`.
