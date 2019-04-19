@@ -141,7 +141,7 @@ def find_lane_pixels(binary_warped, leftx_base, rightx_base):
         # Append these indices to the lists
         left_lane_inds.append(good_left_inds)
         right_lane_inds.append(good_right_inds)
-
+        
         # If you found > minpix pixels, recenter next window on their mean position
         if len(good_left_inds) > minpix:
             leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
@@ -173,7 +173,7 @@ class lane_detector:
         self.b_thresh=(225,255)
         self.font = cv2.FONT_HERSHEY_PLAIN
         self.color = (255,255,255)
-        self.offset = 80
+        self.offset = 100
         self.left = []
         self.right = []
         self.prev_left = 0
@@ -230,7 +230,6 @@ class lane_detector:
         g_binary = channel_threshold(luv_l, self.g_thresh)
     
         # color space threshold of rgb_r channel
-        #b_channel = sobel_absolute_scaled()
         b_binary = channel_threshold(rgb_r, self.b_thresh)
 
         # RGB or BGR
@@ -243,13 +242,10 @@ class lane_detector:
         undist = self.undistort(image)
 
         # get width and height,
-        w,h = undist.shape[1::-1]
+        w,h = image.shape[1::-1]
 
         # apply gradients and threshold
         color = self.gradients(undist)
-
-        # only keep pixel inside region of interest
-        #color = region_of_interest(color, region)
 
         if self.debug_binary:
             tls.save_image_as(color*255, '{}_binary{}'.format(self.base, self.ext), tls.path_join(self.out, 'binary'))
@@ -319,7 +315,7 @@ class lane_detector:
             
             ax1 = fig.add_subplot(1,1,1)
             ax1.plot(range(warped.shape[1]), (warped.shape[0]//2) - histogram, 'red', linewidth=3)
-            ax1.imshow(tls.bgr2rgb((warped[warped.shape[0]//2:,:])*255))
+            ax1.imshow((warped[warped.shape[0]//2:,:]))
             path = '{}/histogram/'.format(self.out)
             tls.ensure_path_exists(path)
             fig.savefig('{}{}.png'.format(path,self.base))
@@ -333,23 +329,18 @@ class lane_detector:
              out_img[righty, rightx] = [0, 0, 255]
              tls.save_image_as(out_img, '{}_output{}'.format(self.base,self.ext), tls.path_join(self.out, 'output'))
 
+        left_fit = self.left
+        right_fit = self.right
+
         # Fit a second order polynomial to each 
         if len(leftx) > 0:
             left_fit =  np.polyfit(lefty,  leftx, 2)
             self.left = left_fit
-        elif len(self.left) > 0:
-            left_fit = self.left
-        else:
-            left_fit = []
 
         if len(rightx) > 0:    
             right_fit = np.polyfit(righty, rightx, 2) 
             self.right = right_fit
-        elif len(self.right) > 0:
-            right_fit = self.right
-        else:
-            right_fit = []
-
+        
         # Generate x and y values for plotting
         ploty = np.linspace(0, warped.shape[0]-1, warped.shape[0] )
         
